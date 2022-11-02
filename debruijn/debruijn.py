@@ -79,17 +79,29 @@ def read_fastq(fastq_file):
 
     
 def cut_kmer(read, kmer_size):
-    for r,_ in enumerate(read[:len(read) - kmer_size + 1]) : 
-        #print(r)
+    for r,_ in enumerate(read[:len(read) - kmer_size + 1]) :
         yield read[r:r+kmer_size]
  
 
 def build_kmer_dict(fastq_file, kmer_size):
-    pass
+    dict_kmer={}
+    for file in read_fastq(fastq_file):
+        for kmer in cut_kmer(file, kmer_size):
+            if kmer in dict_kmer.keys(): 
+                dict_kmer[kmer]+=1
+            else : 
+                dict_kmer[kmer]=1
+    return  dict_kmer
+ 
 
 
 def build_graph(kmer_dict):
-    pass
+    digraph = nx.DiGraph()
+    for kmer in kmer_dict : 
+        digraph.add_edge(kmer[:-1], kmer[1:], weight=kmer_dict[kmer])
+    return digraph
+
+    
 
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
