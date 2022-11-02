@@ -102,8 +102,6 @@ def build_graph(kmer_dict):
     return digraph
 
     
-
-
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     pass
 
@@ -129,17 +127,39 @@ def solve_out_tips(graph, ending_nodes):
     pass
 
 def get_starting_nodes(graph):
-    pass
+    first_node=[]
+    for n in graph.nodes : 
+        if len(list(graph.predecessors(n)))==0: 
+            first_node.append(n)
+    return first_node
 
 def get_sink_nodes(graph):
-    pass
+    last_node=[]
+    for n in graph.nodes : 
+        if len(list(graph.successors(n)))==0: 
+            last_node.append(n)
+    return last_node
+    
 
 def get_contigs(graph, starting_nodes, ending_nodes):
-    pass
-
+    contigs = []
+    for start in starting_nodes : 
+        for end in ending_nodes : 
+         if nx.has_path(graph,start,end):
+            seq=""
+            for path in nx.all_simple_paths(graph,start,end): 
+                seq += path[0]
+                for kmer in path[1:]: 
+                    seq+=kmer[-1]
+                contigs.append((seq,len(seq)))
+    return contigs        
+        
+       
 def save_contigs(contigs_list, output_file):
-    pass
-
+    file = open(output_file+".fasta","w")
+    for contigs in contigs_list:
+        file.write(">contig_{0} len={1} \n".format(contigs[0],contigs[1]))
+        file.write(textwrap.fill(contigs[0], width=80)+"\n")
 
 def draw_graph(graph, graphimg_file):
     """Draw the graph
