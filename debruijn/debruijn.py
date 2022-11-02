@@ -103,12 +103,35 @@ def build_graph(kmer_dict):
 
     
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
-    pass
+    for path in path_list:
+        if delete_entry_node and delete_sink_node:
+            graph.remove_nodes_from(path)
+        elif delete_entry_node: 
+            graph.remove_nodes_from(path[:-1])
+        elif delete_sink_node: 
+            graph.remove_nodes_from(path[1:])
+        else: 
+            graph.remove_nodes_from(path[1:-1])
+    return graph
 
 
 def select_best_path(graph, path_list, path_length, weight_avg_list, 
                      delete_entry_node=False, delete_sink_node=False):
-    pass
+    if statistics.stdev(weight_avg_list)>0: 
+        del path_list[weight_avg_list.index(max(weight_avg_list))]
+        graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
+    
+    elif statistics.stdev(path_length)>0 :
+        del path_list[path_length.index(max(path_length))]
+        graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
+    else: 
+        random.seed(9001)
+        del path_list[weight_avg_list.index(random.randint(0,len(path_list)))]
+        graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
+    return graph        
+
+
+        
 
 def path_average_weight(graph, path):
     """Compute the weight of a path"""
