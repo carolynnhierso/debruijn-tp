@@ -79,7 +79,7 @@ def read_fastq(fastq_file):
 
     
 def cut_kmer(read, kmer_size):
-    for r,_ in enumerate(read[:len(read) - kmer_size + 1]) :
+    for r,_ in enumerate(read[:len(read) - kmer_size + 1]):
         yield read[r:r+kmer_size]
  
 
@@ -97,7 +97,7 @@ def build_kmer_dict(fastq_file, kmer_size):
 
 def build_graph(kmer_dict):
     digraph = nx.DiGraph()
-    for kmer in kmer_dict : 
+    for kmer in kmer_dict: 
         digraph.add_edge(kmer[:-1], kmer[1:], weight=kmer_dict[kmer])
     return digraph
 
@@ -121,7 +121,7 @@ def select_best_path(graph, path_list, path_length, weight_avg_list,
         del path_list[weight_avg_list.index(max(weight_avg_list))]
         graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
     
-    elif statistics.stdev(path_length)>0 :
+    elif statistics.stdev(path_length)>0:
         del path_list[path_length.index(max(path_length))]
         graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
     else: 
@@ -138,10 +138,39 @@ def path_average_weight(graph, path):
     return statistics.mean([d["weight"] for (u, v, d) in graph.subgraph(path).edges(data=True)])
 
 def solve_bubble(graph, ancestor_node, descendant_node):
-    pass
+    path_list,path_length,weight_avg_list = [],[],[]
+    for path in nx.all_simple_paths(graph,ancestor_node,descendant_node): 
+        path_list.append(path)
+        path_length.append(len(path))
+        weight_avg_list.append(path_average_weight(graph, path))
+    print(path_list)    
+    #print(weight_avg_list)
+    graph = select_best_path(graph, path_list, path_length, weight_avg_list, 
+                     delete_entry_node=False, delete_sink_node=False)
+    return graph
+    
+
 
 def simplify_bubbles(graph):
-    pass
+    bubble = False 
+    for n in graph.nodes :
+        list_predecessors = list(graph.predecessors(n))
+        if len(list_predecessors)>1:
+            noeud_n = n
+            for c,i in enumerate(list_predecessors):    
+                for j in list_predecessors[c+1:]: 
+                    ancestor_node = nx.lowest_common_ancestor(graph, i, j)
+                    if ancestor_node != None:
+                        bubble = True
+                        break
+        elif bubble : 
+            break
+    if bubble: 
+            graph = simplify_bubbles(solve_bubble(graph,ancestor_node, noeud_n))
+
+    return graph
+            
+    
 
 def solve_entry_tips(graph, starting_nodes):
     pass
@@ -171,10 +200,11 @@ def get_contigs(graph, starting_nodes, ending_nodes):
          if nx.has_path(graph,start,end):
             seq=""
             for path in nx.all_simple_paths(graph,start,end): 
-                seq += path[0]
+                seq+=path[0]
                 for kmer in path[1:]: 
                     seq+=kmer[-1]
-                contigs.append((seq,len(seq)))
+                contigs.append((seq,len(seq)))    
+       
     return contigs        
         
        
