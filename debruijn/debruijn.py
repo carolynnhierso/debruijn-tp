@@ -117,12 +117,9 @@ def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
 
 def select_best_path(graph, path_list, path_length, weight_avg_list, 
                      delete_entry_node=False, delete_sink_node=False):
-    #print(statistics.stdev(weight_avg_list),statistics.stdev(path_length))
     if statistics.stdev(weight_avg_list)>0: 
         del path_list[weight_avg_list.index(max(weight_avg_list))]
         graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
-        print(graph.nodes)
-    
     elif statistics.stdev(path_length)>0:
         del path_list[path_length.index(max(path_length))]
         graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
@@ -211,7 +208,6 @@ def solve_out_tips(graph, ending_nodes):
         if tips:
             break
     if tips:
-        print(path_list,path_length,weight_avg_list)
         graph = select_best_path(
             graph, path_list, path_length, weight_avg_list, delete_sink_node=True)
         graph = solve_out_tips(graph, ending_nodes)
@@ -248,10 +244,10 @@ def get_contigs(graph, starting_nodes, ending_nodes):
         
        
 def save_contigs(contigs_list, output_file):
-    file = open(output_file+".fasta","w")
-    for contigs in contigs_list:
-        file.write(">contig_{0} len={1} \n".format(contigs[0],contigs[1]))
-        file.write(textwrap.fill(contigs[0], width=80)+"\n")
+    with open(output_file,"w") as file:
+        for contigs in contigs_list:
+            file.write(">contig_{0} len={1} \n".format(contigs[0],contigs[1]))
+            file.write(textwrap.fill(contigs[0], width=80)+"\n")
 
 def draw_graph(graph, graphimg_file):
     """Draw the graph
@@ -282,16 +278,29 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-    for read in read_fastq(args.fastq_file):
-        cut_kmer(read,args.kmer_size)
+    # 1. Lecture du fichier et construction du graphe
+    kmer_dict =build_kmer_dict(args.fastq_file,args.kmer_size)
+    graph = build_graph(kmer_dict)
+
+    # 2. Résolution des bulles
+    graph = simplify_bubbles(graph)
+
+    # 3. Résolution des pointes d’entrée et de sortie
     
+    graph = solve_entry_tips(graph,get_starting_nodes(graph))
+    graph = solve_out_tips(graph,get_sink_nodes(graph))
+    # 4. Ecriture du/des contigs 
+    contigs = get_contigs(graph,get_starting_nodes(graph),get_sink_nodes(graph))
+    save_contigs(contigs,args.output_file)
+ 
+
 
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
     # graphe
     # Plot the graph
-    # if args.graphimg_file:
-    #     draw_graph(graph, args.graphimg_file)
+    if args.graphimg_file:
+         draw_graph(graph, args.graphimg_file)
 
 
 if __name__ == '__main__':
