@@ -27,13 +27,13 @@ import textwrap
 import matplotlib.pyplot as plt
 matplotlib.use("Agg")
 
-__author__ = "Your Name"
+__author__ = "Carolynn Hierso"
 __copyright__ = "Universite Paris Diderot"
-__credits__ = ["Your Name"]
+__credits__ = ["Carolynn Hierso"]
 __license__ = "GPL"
 __version__ = "1.0.0"
-__maintainer__ = "Your Name"
-__email__ = "your@email.fr"
+__maintainer__ = "Carolynn Hierso"
+__email__ = "carolynn.hierso@etu.u-paris.fr"
 __status__ = "Developpement"
 
 def isfile(path):
@@ -117,9 +117,11 @@ def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
 
 def select_best_path(graph, path_list, path_length, weight_avg_list, 
                      delete_entry_node=False, delete_sink_node=False):
+    #print(statistics.stdev(weight_avg_list),statistics.stdev(path_length))
     if statistics.stdev(weight_avg_list)>0: 
         del path_list[weight_avg_list.index(max(weight_avg_list))]
         graph = remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
+        print(graph.nodes)
     
     elif statistics.stdev(path_length)>0:
         del path_list[path_length.index(max(path_length))]
@@ -143,8 +145,6 @@ def solve_bubble(graph, ancestor_node, descendant_node):
         path_list.append(path)
         path_length.append(len(path))
         weight_avg_list.append(path_average_weight(graph, path))
-    print(path_list)    
-    #print(weight_avg_list)
     graph = select_best_path(graph, path_list, path_length, weight_avg_list, 
                      delete_entry_node=False, delete_sink_node=False)
     return graph
@@ -170,13 +170,52 @@ def simplify_bubbles(graph):
 
     return graph
             
-    
-
 def solve_entry_tips(graph, starting_nodes):
-    pass
+    for node in graph.nodes():
+        path_list,path_length,weight_avg_list= [],[],[]        
+        tips = False
+        list_predecessors = list(graph.predecessors(node))
+        if len(list_predecessors) > 1:
+            for start in starting_nodes:
+                if nx.has_path(graph, start, node):
+                    path = list(nx.all_simple_paths(
+                        graph, start, node))
+                    path_list.append(path[0])
+                    path_length.append(len(path[0]))
+                    weight_avg_list.append(path_average_weight(graph, path[0]))
+                    tips = True
+        if tips:
+            break
+    if tips:
+        graph = select_best_path(
+            graph, path_list, path_length, weight_avg_list, delete_entry_node=True)
+        graph = solve_entry_tips(graph, starting_nodes)
+    return graph
 
+        
 def solve_out_tips(graph, ending_nodes):
-    pass
+    for node in graph.nodes():
+        path_list,path_length,weight_avg_list= [],[],[]        
+        tips = False
+        list_successors = list(graph.successors(node))
+        if len(list_successors) > 1:
+            for end in ending_nodes:
+                if nx.has_path(graph,node,end):
+                    path = list(nx.all_simple_paths(
+                        graph, node,end))
+                    path_list.append(path[0])
+                    path_length.append(len(path[0]))
+                    weight_avg_list.append(path_average_weight(graph, path[0]))
+                    tips = True
+                
+        if tips:
+            break
+    if tips:
+        print(path_list,path_length,weight_avg_list)
+        graph = select_best_path(
+            graph, path_list, path_length, weight_avg_list, delete_sink_node=True)
+        graph = solve_out_tips(graph, ending_nodes)
+    return graph
 
 def get_starting_nodes(graph):
     first_node=[]
